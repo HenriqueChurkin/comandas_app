@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import { useState } from 'react';
 import UserProfile from './UserProfile';
+import { USER_GROUPS } from '../../constants/userGroups';
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -18,11 +19,11 @@ const Navbar = () => {
 
     const menuItems = [
         { label: 'Dashboard', icon: <Dashboard />, path: '/home' },
-        { label: 'Funcionários', icon: <People />, path: '/funcionarios' },
+        ...(user?.grupo === USER_GROUPS.ADMINISTRADOR ? [{ label: 'Funcionários', icon: <People />, path: '/funcionarios' }] : []),
         { label: 'Clientes', icon: <Group />, path: '/clientes' },
         { label: 'Produtos', icon: <RestaurantMenu />, path: '/produtos' },
         { label: 'Comandas', icon: <Receipt />, path: '/comandas' },
-        { label: 'Caixa', icon: <PointOfSale />, path: '/caixa' },
+        ...(user?.grupo === USER_GROUPS.ADMINISTRADOR || user?.grupo === USER_GROUPS.CAIXA ? [{ label: 'Caixa', icon: <PointOfSale />, path: '/caixa' }] : [])
     ];
 
     const handleDrawerToggle = () => {

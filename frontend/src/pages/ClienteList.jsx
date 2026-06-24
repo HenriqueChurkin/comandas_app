@@ -1,198 +1,153 @@
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Card, CardContent, Typography, Box, Divider } from '@mui/material';
-import { FiberNew } from '@mui/icons-material';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageLayout from "../components/common/PageLayout";
-import ActionButtons from "../components/common/ActionButtons";
+import {Alert, Box, Button, Card, CardContent, CircularProgress, Divider, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,} from '@mui/material';
+import { FiberNew } from '@mui/icons-material';
+import ActionButtons from '../components/common/ActionButtons';
+import PageLayout from '../components/common/PageLayout';
+import { useMasks } from '../hooks/useMasks';
+import clienteService from '../services/clienteService';
+import showConfirm from '../utils/confirm';
+import showSnackbar from '../utils/snackbar';
 
-function ClienteList() {
-
+const ClienteList = () => {
     const navigate = useNavigate();
+    const { applyCpfMask, applyPhoneMask } = useMasks();
+    const [clientes, setClientes] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const clientes = [
-        {
-            id: 1,
-            nome: 'Neymar Jr',
-            cpf: '10',
-            telefone: '499999062026'
-        },
-        {
-            id: 2,
-            nome: 'Ronaldo',
-            cpf: '9',
-            telefone: '49999052002'
+    const loadClientes = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await clienteService.list({ limit: 1000 });
+            setClientes(data);
+        } catch (error) {
+            const mensagem = error.apiMessage || 'Erro ao carregar clientes';
+            showSnackbar(mensagem, 'error');
+        } finally {
+            setLoading(false);
         }
-    ];
+    }, []);
+
+    useEffect(() => {
+        loadClientes();
+    }, [loadClientes]);
+
+    const handleView = (cliente) => navigate(`/cliente/view/${cliente.id}`);
+    const handleEdit = (cliente) => navigate(`/cliente/edit/${cliente.id}`);
+
+    const handleDelete = (cliente) => {
+        showConfirm(
+            'Excluir Cliente',
+            `Tem certeza que deseja excluir "${cliente.nome}"?`,
+            async () => {
+                try {
+                    await clienteService.delete(cliente.id);
+                    setClientes((current) => current.filter((item) => item.id !== cliente.id));
+                    showSnackbar('Cliente excluido com sucesso!', 'success');
+                } catch (error) {
+                    const mensagem = error.apiMessage || 'Erro ao excluir cliente';
+                    showSnackbar(mensagem, 'error');
+                }
+            },
+        );
+    };
 
     const actions = (
         <Button
             variant="contained"
-            color="primary"
             onClick={() => navigate('/cliente')}
             startIcon={<FiberNew />}
-            sx={{ fontWeight: 600, px: 2, py: 1 }}
+            sx={{ fontWeight: 600 }}
         >
             Novo
         </Button>
     );
 
-    const handleView = (cliente) =>
-        console.log("Visualizar cliente:", cliente);
-
-    const handleEdit = (cliente) =>
-        navigate(`/cliente/${cliente.id}`);
-
-    const handleDelete = (cliente) =>
-        console.log("Excluir cliente:", cliente);
-
-    const columns = [
-        { field: 'id', headerName: 'ID' },
-        { field: 'nome', headerName: 'Nome' },
-        { field: 'cpf', headerName: 'CPF' },
-        { field: 'telefone', headerName: 'Telefone' },
-        { field: 'actions', headerName: 'Ações' }
-    ];
-
-    // Desktop
-    const renderDesktopRow = (cliente) => (
-        <TableRow key={cliente.id} hover>
-
-            <TableCell>
-                {cliente.id}
-            </TableCell>
-
-            <TableCell sx={{ fontWeight: 500 }}>
-                {cliente.nome}
-            </TableCell>
-
-            <TableCell>
-                {cliente.cpf}
-            </TableCell>
-
-            <TableCell>
-                {cliente.telefone}
-            </TableCell>
-
-            <TableCell>
-                <ActionButtons
-                    item={cliente}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                />
-            </TableCell>
-
-        </TableRow>
-    );
-
-    // Mobile
-    const renderMobileCard = (cliente) => (
-        <Card key={cliente.id} sx={{ mb: 2, elevation: 2 }}>
-
-            <CardContent sx={{ p: 2 }}>
-
-                <Box sx={{ mb: 2 }}>
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            fontSize: '1.1rem',
-                            fontWeight: 600
-                        }}
-                    >
-                        {cliente.nome}
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                    >
-                        ID: {cliente.id}
-                    </Typography>
+    if (loading) {
+        return (
+            <PageLayout title="Clientes" actions={actions}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                    <CircularProgress />
                 </Box>
-
-                <Divider sx={{ mb: 2 }} />
-
-                <Box sx={{ mb: 2 }}>
-
-                    <Typography variant="body2">
-                        <strong>CPF:</strong> {cliente.cpf}
-                    </Typography>
-
-                    <Typography variant="body2">
-                        <strong>Telefone:</strong> {cliente.telefone}
-                    </Typography>
-
-                </Box>
-
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'flex-end'
-                    }}
-                >
-                    <ActionButtons
-                        item={cliente}
-                        onView={handleView}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                    />
-                </Box>
-
-            </CardContent>
-
-        </Card>
-    );
+            </PageLayout>
+        );
+    }
 
     return (
-
         <PageLayout title="Clientes" actions={actions}>
+            {clientes.length === 0 ? (
+                <Alert severity="info">
+                    Nenhum cliente cadastrado.
+                </Alert>
+            ) : (
+                <>
+                    <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                        <TableContainer component={Paper}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>ID</TableCell>
+                                        <TableCell>Nome</TableCell>
+                                        <TableCell>CPF</TableCell>
+                                        <TableCell>Telefone</TableCell>
+                                        <TableCell>Acoes</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {clientes.map((cliente) => (
+                                        <TableRow key={cliente.id} hover>
+                                            <TableCell>{cliente.id}</TableCell>
+                                            <TableCell sx={{ fontWeight: 600 }}>{cliente.nome}</TableCell>
+                                            <TableCell>{applyCpfMask(cliente.cpf)}</TableCell>
+                                            <TableCell>{applyPhoneMask(cliente.telefone)}</TableCell>
+                                            <TableCell>
+                                                <ActionButtons
+                                                    item={cliente}
+                                                    onView={handleView}
+                                                    onEdit={handleEdit}
+                                                    onDelete={handleDelete}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Box>
 
-            {/* Desktop */}
-            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-
-                <TableContainer component={Paper}>
-
-                    <Table>
-
-                        <TableHead>
-                            <TableRow>
-
-                                {columns.map((column, index) => (
-                                    <TableCell
-                                        key={index}
-                                        sx={{ fontWeight: 600 }}
-                                    >
-                                        {column.headerName}
-                                    </TableCell>
-                                ))}
-
-                            </TableRow>
-                        </TableHead>
-
-                        <TableBody>
-                            {clientes.map((cliente) =>
-                                renderDesktopRow(cliente)
-                            )}
-                        </TableBody>
-
-                    </Table>
-
-                </TableContainer>
-
-            </Box>
-
-            {/* Mobile */}
-            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-
-                {clientes.map((cliente) =>
-                    renderMobileCard(cliente)
-                )}
-
-            </Box>
-
+                    <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+                        {clientes.map((cliente) => (
+                            <Card key={cliente.id} sx={{ mb: 2 }}>
+                                <CardContent>
+                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                        {cliente.nome}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        ID: {cliente.id}
+                                    </Typography>
+                                    <Divider sx={{ my: 2 }} />
+                                    <Typography variant="body2">
+                                        <strong>CPF:</strong> {applyCpfMask(cliente.cpf)}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <strong>Telefone:</strong> {applyPhoneMask(cliente.telefone)}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                        <ActionButtons
+                                            item={cliente}
+                                            onView={handleView}
+                                            onEdit={handleEdit}
+                                            onDelete={handleDelete}
+                                        />
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </Box>
+                </>
+            )}
         </PageLayout>
-
     );
-
-}
+};
 
 export default ClienteList;

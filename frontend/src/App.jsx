@@ -4,6 +4,7 @@ import { Container, ThemeProvider, CssBaseline } from "@mui/material";
 import { theme } from "./theme"; // estilos globais
 import { ToastContainer } from 'react-toastify';
 import Navbar from "./components/common/Navbar"; // componente reutilizável de navegação
+import SnackbarGlobal from "./components/common/Snackbar"; // componente global de notificações
 import AppRoutes from "./routes/Router"; // rotas da aplicação
 
 function App() {
@@ -18,6 +19,8 @@ function App() {
         <AuthProvider>
           {/* Navbar é o componente de navegação que contém os links para as diferentes páginas da aplicação */}
           <Navbar />
+          {/* SnackbarGlobal para notificações em toda aplicação */}
+          <SnackbarGlobal />
           {/* Container é um componente do Material-UI que fornece um layout responsivo e centralizado */}
           <Container maxWidth="xl" sx={{ mt: { xs: 2, sm: 3, md: 4 }, mb: { xs: 2, sm: 3, md: 4 }, px: { xs: 1, sm: 2 } }}>
             {/* AppRoutes é o componente que contém as rotas da aplicação, definindo quais componentes devem ser renderizados em cada rota */}
